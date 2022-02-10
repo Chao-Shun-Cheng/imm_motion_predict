@@ -29,3 +29,25 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+#imm_motion_predict
+add_executable(imm_motion_predict
+        src/imm_motion_predict_node.cpp
+        src/imm_motion_predict.cpp)
+
+target_link_libraries(imm_motion_predict
+        ${catkin_LIBRARIES}
+        )
+
+add_dependencies(imm_motion_predict
+        ${catkin_EXPORTED_TARGETS}
+        )
+
+install(TARGETS
+        imm_motion_predict
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(DIRECTORY launch/
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+        PATTERN ".svn" EXCLUDE)

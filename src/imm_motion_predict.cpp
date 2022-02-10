@@ -1,10 +1,9 @@
-#include "imm_motion_predict.h"
+#include "imm_motion_predict/imm_motion_predict.h"
 
 ImmMotionPredict::ImmMotionPredict() : nh_(), private_nh_("~"), MAX_PREDICTION_SCORE_(1.0)
 {
     private_nh_.param<double>("interval_sec", interval_sec_, 0.1);
     private_nh_.param<int>("num_prediction", num_prediction_, 10);
-    private_nh_.param<double>("sensor_height_", sensor_height_, 2.0);
 
     predicted_objects_pub_ = nh_.advertise<autoware_msgs::DetectedObjectArray>("/prediction/motion_predictor/objects", 1);
     predicted_paths_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("/prediction/motion_predictor/path_markers", 1);
@@ -35,7 +34,7 @@ void ImmMotionPredict::initializeROSmarker(const std_msgs::Header &header,
     geometry_msgs::Point p;
     p.x = position.x;
     p.y = position.y;
-    p.z = -sensor_height_;
+    p.z = 0;
     predicted_line.points.push_back(p);
 }
 
@@ -55,7 +54,7 @@ void ImmMotionPredict::makePrediction(const autoware_msgs::DetectedObject &objec
         geometry_msgs::Point p;
         p.x = predicted_object.pose.position.x;
         p.y = predicted_object.pose.position.y;
-        p.z = -sensor_height_;
+        p.z = 0;
         predicted_line.points.push_back(p);
     }
 }

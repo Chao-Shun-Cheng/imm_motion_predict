@@ -1,0 +1,16 @@
+<!---->
+<launch>
+    <arg name="interval_sec" default="0.1"/>
+    <arg name="num_prediction" default="10"/>
+    <arg name="input_topic" default="/cross_cov/tracker/objects"/>
+
+    <remap from="/cross_cov/tracker/objects" to="$(arg input_topic)"/>
+
+    <node pkg="naive_motion_predict" type="naive_motion_predict" name="naive_motion_predict">
+        <param name="interval_sec" value="$(arg interval_sec)"/>
+        <param name="num_prediction" value="$(arg num_prediction)"/>
+    </node>
+
+    <node pkg="detected_objects_visualizer" type="visualize_detected_objects" name="naive_prediction_visualization_01"
+          output="screen" ns="/prediction/motion_predictor" />
+</launch>

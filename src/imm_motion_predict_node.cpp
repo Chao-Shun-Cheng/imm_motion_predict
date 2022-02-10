@@ -1,4 +1,4 @@
-#include "imm_motion_predict.h"
+#include "imm_motion_predict/imm_motion_predict.h"
 
 int main(int argc, char **argv)
 {
