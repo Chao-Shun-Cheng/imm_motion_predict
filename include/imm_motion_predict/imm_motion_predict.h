@@ -1,5 +1,5 @@
-#ifndef NAIVE_MOTION_PREDICT_H
-#define NAIVE_MOTION_PREDICT_H
+#ifndef IMM_MOTION_PREDICT_H
+#define IMM_MOTION_PREDICT_H
 
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
@@ -34,7 +34,6 @@ private:
     double interval_sec_;
     int num_prediction_;
     double sensor_height_;
-    double filter_out_close_object_threshold_;
 
     void objectsCallback(const autoware_msgs::DetectedObjectArray &input);
 
@@ -64,4 +63,4 @@ public:
     ~ImmMotionPredict();
 };
 
-#endif  // NAIVE_MOTION_PREDICT_H
+#endif  
