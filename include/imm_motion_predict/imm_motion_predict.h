@@ -37,12 +37,17 @@ private:
 
     void objectsCallback(const autoware_msgs::DetectedObjectArray &input);
 
-    void initializeROSmarker(const std_msgs::Header &header,
+    void initializeROSmarker_line(const std_msgs::Header &header,
                              const geometry_msgs::Point &position,
                              const int object_id,
                              visualization_msgs::Marker &predicted_line);
 
-    void makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line);
+    void initializeROSmarker_circle(const std_msgs::Header &header,
+                             const geometry_msgs::Point &position,
+                             const int object_id,
+                             visualization_msgs::Marker &predicted_line);
+
+    void makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line, visualization_msgs::MarkerArray &predicted_circle);
 
     autoware_msgs::DetectedObject generatePredictedObject(const autoware_msgs::DetectedObject &object);
 

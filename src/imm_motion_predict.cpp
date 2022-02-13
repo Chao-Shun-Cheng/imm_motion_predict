@@ -12,7 +12,7 @@ ImmMotionPredict::ImmMotionPredict() : nh_(), private_nh_("~"), MAX_PREDICTION_S
 
 ImmMotionPredict::~ImmMotionPredict() {}
 
-void ImmMotionPredict::initializeROSmarker(const std_msgs::Header &header,
+void ImmMotionPredict::initializeROSmarker_line(const std_msgs::Header &header,
                                            const geometry_msgs::Point &position,
                                            const int object_id,
                                            visualization_msgs::Marker &predicted_line)
@@ -20,46 +20,85 @@ void ImmMotionPredict::initializeROSmarker(const std_msgs::Header &header,
     predicted_line.lifetime = ros::Duration(0.2);
     predicted_line.header.frame_id = header.frame_id;
     predicted_line.header.stamp = header.stamp;
-    predicted_line.ns = "predicted_line";
+    predicted_line.ns = "predicted_trajectories";
     predicted_line.action = visualization_msgs::Marker::ADD;
-    predicted_line.pose.orientation.w = 1.0;
+    
     predicted_line.id = object_id;
     predicted_line.type = visualization_msgs::Marker::LINE_STRIP;
-    predicted_line.scale.x = 2;
-
-    // Points are green
-    predicted_line.color.r = 1.0f;
+    predicted_line.scale.x = 0.1;
+    
+    // Points color
+    predicted_line.color.r = 0;
+    predicted_line.color.g = 1.0;
+    predicted_line.color.b = 0;
     predicted_line.color.a = 0.5;
 
-    geometry_msgs::Point p;
-    p.x = position.x;
-    p.y = position.y;
-    p.z = 0;
-    predicted_line.points.push_back(p);
+    predicted_line.pose.position.x = 0;
+    predicted_line.pose.position.y = 0;
+    predicted_line.pose.position.z = 0;
+    predicted_line.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+    // geometry_msgs::Point p;
+    // p.x = position.x;
+    // p.y = position.y;
+    // p.z = 0;
+    // predicted_line.points.push_back(p);
 }
 
-void ImmMotionPredict::makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line)
+void ImmMotionPredict::initializeROSmarker_circle(const std_msgs::Header &header,
+                                           const geometry_msgs::Point &position,
+                                           const int object_id,
+                                           visualization_msgs::Marker &predicted_line)
+{
+    predicted_line.lifetime = ros::Duration(0.2);
+    predicted_line.header.frame_id = header.frame_id;
+    predicted_line.header.stamp = header.stamp;
+    predicted_line.ns = "predicted_trajectories";
+    predicted_line.action = visualization_msgs::Marker::ADD;
+    
+    predicted_line.id = object_id;
+    predicted_line.type = visualization_msgs::Marker::CYLINDER;
+    predicted_line.scale.x = 0.2;
+    predicted_line.scale.y = 0.2;
+    predicted_line.scale.z = 0.02;
+    // Points color
+    predicted_line.color.r = 0.9;
+    predicted_line.color.g = 0.9;
+    predicted_line.color.b = 0;
+    predicted_line.color.a = 0.8;
+
+    predicted_line.pose.position.x = position.x;
+    predicted_line.pose.position.y = position.y;
+    predicted_line.pose.position.z = position.z;
+    predicted_line.pose.orientation = tf::createQuaternionMsgFromYaw(0.4);
+    // geometry_msgs::Point p;
+    // p.x = position.x;
+    // p.y = position.y;
+    // p.z = 0;
+    // predicted_line.points.push_back(p);
+}
+
+void ImmMotionPredict::makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line, visualization_msgs::MarkerArray &predicted_trajectories)
 {
     autoware_msgs::DetectedObject target_object = object;
     autoware_msgs::Lane predicted_trajectory;
+    int count = 0;
     // target_object.score = MAX_PREDICTION_SCORE_;
-    initializeROSmarker(target_object.header, target_object.pose.position, target_object.id, predicted_line);
-    
+    initializeROSmarker_line(target_object.header, target_object.pose.position, count, predicted_line);
+
     for (int ith_prediction = 0; ith_prediction < num_prediction_; ith_prediction++) {
+        count++;
         autoware_msgs::DetectedObject predicted_object = generatePredictedObject(target_object);
-        // predicted_object.score = (-1 / num_prediction_) * ith_prediction + MAX_PREDICTION_SCORE_;
-        // predicted_objects_vec.push_back(predicted_object);
         target_object = predicted_object;
 
-        geometry_msgs::Point p;
-        p.x = predicted_object.pose.position.x;
-        p.y = predicted_object.pose.position.y;
-        p.z = 0;
-        predicted_line.points.push_back(p);
-
+        predicted_line.points.push_back(predicted_object.pose.position);
+        
         autoware_msgs::Waypoint predicted_waypoint;
         predicted_waypoint.pose.pose = predicted_object.pose;
         predicted_trajectory.waypoints.push_back(predicted_waypoint);
+
+        visualization_msgs::Marker predicted_circle;
+        initializeROSmarker_circle(predicted_object.header, predicted_object.pose.position, count, predicted_circle);
+        predicted_trajectories.markers.push_back(predicted_circle);
     }
     object.candidate_trajectories.lanes.push_back(predicted_trajectory);
 }
@@ -183,23 +222,24 @@ void ImmMotionPredict::objectsCallback(const autoware_msgs::DetectedObjectArray 
 {
     autoware_msgs::DetectedObjectArray output;
     output.header = input.header;
-    visualization_msgs::MarkerArray predicted_lines;
+    visualization_msgs::MarkerArray predicted_trajectories;
 
     for (const auto &object : input.objects) {
         autoware_msgs::DetectedObject predicted_objects = object;
         visualization_msgs::Marker predicted_line;
+        visualization_msgs::Marker predicted_circle;
         if (isObjectValid(predicted_objects)) {
-            makePrediction(predicted_objects, predicted_line);
+            makePrediction(predicted_objects, predicted_line, predicted_trajectories);
 
             // concate to output object array
             // output.objects.insert(output.objects.end(), predicted_objects_vec.begin(), predicted_objects_vec.end());
             output.objects.push_back(predicted_objects);
 
-            predicted_lines.markers.push_back(predicted_line);
+            predicted_trajectories.markers.push_back(predicted_line);
         }
     }
     predicted_objects_pub_.publish(output);
-    predicted_paths_pub_.publish(predicted_lines);
+    predicted_paths_pub_.publish(predicted_trajectories);
 }
 
 bool ImmMotionPredict::isObjectValid(const autoware_msgs::DetectedObject &in_object)
