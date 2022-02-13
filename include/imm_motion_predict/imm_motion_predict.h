@@ -42,9 +42,7 @@ private:
                              const int object_id,
                              visualization_msgs::Marker &predicted_line);
 
-    void makePrediction(const autoware_msgs::DetectedObject &object,
-                        std::vector<autoware_msgs::DetectedObject> &predicted_objects,
-                        visualization_msgs::Marker &predicted_line);
+    void makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line);
 
     autoware_msgs::DetectedObject generatePredictedObject(const autoware_msgs::DetectedObject &object);
 
@@ -63,4 +61,4 @@ public:
     ~ImmMotionPredict();
 };
 
-#endif  
+#endif

@@ -38,17 +38,17 @@ void ImmMotionPredict::initializeROSmarker(const std_msgs::Header &header,
     predicted_line.points.push_back(p);
 }
 
-void ImmMotionPredict::makePrediction(const autoware_msgs::DetectedObject &object,
-                                      std::vector<autoware_msgs::DetectedObject> &predicted_objects_vec,
-                                      visualization_msgs::Marker &predicted_line)
+void ImmMotionPredict::makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line)
 {
     autoware_msgs::DetectedObject target_object = object;
-    target_object.score = MAX_PREDICTION_SCORE_;
-    initializeROSmarker(object.header, object.pose.position, object.id, predicted_line);
+    autoware_msgs::Lane predicted_trajectory;
+    // target_object.score = MAX_PREDICTION_SCORE_;
+    initializeROSmarker(target_object.header, target_object.pose.position, target_object.id, predicted_line);
+    
     for (int ith_prediction = 0; ith_prediction < num_prediction_; ith_prediction++) {
         autoware_msgs::DetectedObject predicted_object = generatePredictedObject(target_object);
-        predicted_object.score = (-1 / num_prediction_) * ith_prediction + MAX_PREDICTION_SCORE_;
-        predicted_objects_vec.push_back(predicted_object);
+        // predicted_object.score = (-1 / num_prediction_) * ith_prediction + MAX_PREDICTION_SCORE_;
+        // predicted_objects_vec.push_back(predicted_object);
         target_object = predicted_object;
 
         geometry_msgs::Point p;
@@ -56,7 +56,12 @@ void ImmMotionPredict::makePrediction(const autoware_msgs::DetectedObject &objec
         p.y = predicted_object.pose.position.y;
         p.z = 0;
         predicted_line.points.push_back(p);
+
+        autoware_msgs::Waypoint predicted_waypoint;
+        predicted_waypoint.pose.pose = predicted_object.pose;
+        predicted_trajectory.waypoints.push_back(predicted_waypoint);
     }
+    object.candidate_trajectories.lanes.push_back(predicted_trajectory);
 }
 
 /*
@@ -115,7 +120,7 @@ autoware_msgs::DetectedObject ImmMotionPredict::moveConstantVelocity(const autow
     predicted_object.pose.position.x = prediction_px;
     predicted_object.pose.position.y = prediction_py;
 
-    predicted_object.convex_hull = getPredictedConvexHull(object.convex_hull, delta_x, delta_y); // unread by Kenny
+    predicted_object.convex_hull = getPredictedConvexHull(object.convex_hull, delta_x, delta_y);  // unread by Kenny
 
     return predicted_object;
 }
@@ -177,22 +182,19 @@ double ImmMotionPredict::generateYawFromQuaternion(const geometry_msgs::Quaterni
 void ImmMotionPredict::objectsCallback(const autoware_msgs::DetectedObjectArray &input)
 {
     autoware_msgs::DetectedObjectArray output;
+    output.header = input.header;
     visualization_msgs::MarkerArray predicted_lines;
-    output = input;
 
     for (const auto &object : input.objects) {
-        std::vector<autoware_msgs::DetectedObject> predicted_objects_vec;
+        autoware_msgs::DetectedObject predicted_objects = object;
         visualization_msgs::Marker predicted_line;
-        if (isObjectValid(object)) {
-            makePrediction(object, predicted_objects_vec, predicted_line);
+        if (isObjectValid(predicted_objects)) {
+            makePrediction(predicted_objects, predicted_line);
 
             // concate to output object array
-            output.objects.insert(output.objects.end(), predicted_objects_vec.begin(), predicted_objects_vec.end());
+            // output.objects.insert(output.objects.end(), predicted_objects_vec.begin(), predicted_objects_vec.end());
+            output.objects.push_back(predicted_objects);
 
-            // visualize only stably tracked objects
-            if (!object.pose_reliable) {
-                continue;
-            }
             predicted_lines.markers.push_back(predicted_line);
         }
     }
@@ -205,7 +207,7 @@ bool ImmMotionPredict::isObjectValid(const autoware_msgs::DetectedObject &in_obj
     if (!in_object.valid || std::isnan(in_object.pose.orientation.x) || std::isnan(in_object.pose.orientation.y) ||
         std::isnan(in_object.pose.orientation.z) || std::isnan(in_object.pose.orientation.w) || std::isnan(in_object.pose.position.x) ||
         std::isnan(in_object.pose.position.y) || std::isnan(in_object.pose.position.z) || (in_object.dimensions.x <= 0) ||
-        (in_object.dimensions.y <= 0) || (in_object.dimensions.z <= 0)) {
+        (in_object.dimensions.y <= 0) || !in_object.pose_reliable || (in_object.dimensions.z <= 0)) {
         return false;
     }
     return true;
