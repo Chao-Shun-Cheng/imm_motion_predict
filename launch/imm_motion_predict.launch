@@ -2,7 +2,7 @@
 <launch>
     <arg name="interval_sec" default="0.1"/>
     <arg name="num_prediction" default="10"/>
-    <arg name="input_topic" default="/simulator/ground_truth/objects"/>
+    <arg name="input_topic" default="/detection/object_tracker/objects"/>
 
     <remap from="/cross_cov/tracker/objects" to="$(arg input_topic)"/>
 

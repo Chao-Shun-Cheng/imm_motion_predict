@@ -77,6 +77,31 @@ void ImmMotionPredict::initializeROSmarker_circle(const std_msgs::Header &header
     // predicted_line.points.push_back(p);
 }
 
+void ImmMotionPredict::initializeROSmarker_motion(const std_msgs::Header &header,
+                                           const geometry_msgs::Point &position,
+                                           const int object_id,
+                                           visualization_msgs::Marker &motion_marker,
+                                           std::string text)
+{
+    motion_marker.header.frame_id = header.frame_id;
+    motion_marker.header.stamp = header.stamp;
+    motion_marker.ns = "predicted_trajectories";
+    motion_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+    motion_marker.action = visualization_msgs::Marker::ADD;
+    motion_marker.scale.z = 0.8;
+    motion_marker.color.a = 0.9;
+    motion_marker.color.r = 1;
+    motion_marker.color.g = 1;
+    motion_marker.color.b = 1;
+    // motion_marker.frame_locked = false;
+    motion_marker.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+    motion_marker.id = object_id;
+    motion_marker.pose.position.x = position.x;
+    motion_marker.pose.position.y = position.y;
+    motion_marker.pose.position.z += 0.2;
+    motion_marker.text = text; 
+}
+
 void ImmMotionPredict::makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line, visualization_msgs::MarkerArray &predicted_trajectories)
 {
     autoware_msgs::DetectedObject target_object = object;
@@ -101,6 +126,18 @@ void ImmMotionPredict::makePrediction(autoware_msgs::DetectedObject &object, vis
         predicted_trajectories.markers.push_back(predicted_circle);
     }
     object.candidate_trajectories.lanes.push_back(predicted_trajectory);
+
+    visualization_msgs::Marker motion_marker;
+    count++;
+    if (object.behavior_state == MotionModel::CV) {
+        initializeROSmarker_motion(object.header, object.pose.position, count, motion_marker, "constant velocity");
+    } else if (object.behavior_state == MotionModel::CTRV) {
+        initializeROSmarker_motion(object.header, object.pose.position, count, motion_marker, "constant turn rate velocity");
+    } else {
+        initializeROSmarker_motion(object.header, object.pose.position, count, motion_marker, "random motion");
+    }
+    
+    predicted_trajectories.markers.push_back(motion_marker);
 }
 
 /*
@@ -234,7 +271,6 @@ void ImmMotionPredict::objectsCallback(const autoware_msgs::DetectedObjectArray 
             // concate to output object array
             // output.objects.insert(output.objects.end(), predicted_objects_vec.begin(), predicted_objects_vec.end());
             output.objects.push_back(predicted_objects);
-
             predicted_trajectories.markers.push_back(predicted_line);
         }
     }

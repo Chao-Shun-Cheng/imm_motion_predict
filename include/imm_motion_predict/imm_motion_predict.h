@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <string>
 #include "autoware_msgs/DetectedObject.h"
 #include "autoware_msgs/DetectedObjectArray.h"
 
@@ -46,6 +47,12 @@ private:
                              const geometry_msgs::Point &position,
                              const int object_id,
                              visualization_msgs::Marker &predicted_line);
+
+    void initializeROSmarker_motion(const std_msgs::Header &header,
+                             const geometry_msgs::Point &position,
+                             const int object_id,
+                             visualization_msgs::Marker &motion_marker,
+                             std::string text);
 
     void makePrediction(autoware_msgs::DetectedObject &object, visualization_msgs::Marker &predicted_line, visualization_msgs::MarkerArray &predicted_circle);
 
